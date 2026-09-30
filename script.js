@@ -1,145 +1,207 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+// Import Firebase SDKs from CDN
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
     getAuth, 
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
+    signInWithPopup, 
+    GoogleAuthProvider, 
     signOut, 
-    onAuthStateChanged,
-    GoogleAuthProvider,
-    signInWithPopup
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+    onAuthStateChanged 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs, 
+    deleteDoc, 
+    doc, 
+    query, 
+    onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 1. Firebase & API Config
+// TODO: Replace with your actual Firebase project configuration values
 const firebaseConfig = {
-    apiKey: "AIzaSyB4ApK_zUskd6WT9jEvrxHho5VVsEZlRTI",
-    authDomain: "task-chatbot-14df6.firebaseapp.com",
-    projectId: "task-chatbot-14df6"
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "task-chatbot.firebaseapp.com",
+    projectId: "task-chatbot",
+    storageBucket: "task-chatbot.appspot.com",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID"
 };
+
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
-const OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY";
 
 // DOM Elements
-const ui = {
-    login: document.getElementById('login-container'),
-    dash: document.getElementById('dashboard-container'),
-    email: document.getElementById('email'),
-    pass: document.getElementById('password'),
-    tasks: document.getElementById('task-list'),
-    chats: document.getElementById('chat-history'),
-    input: document.getElementById('chat-input'),
-    profilePic: document.getElementById('user-profile-pic'),
-    displayName: document.getElementById('user-display-name')
-};
+const authContainer = document.getElementById('auth-container');
+const appContainer = document.getElementById('app-container');
+const emailAuthForm = document.getElementById('email-auth-form');
+const authEmailInput = document.getElementById('auth-email');
+const authPasswordInput = document.getElementById('auth-password');
+const googleAuthBtn = document.getElementById('google-auth-btn');
+const authError = document.getElementById('auth-error');
+const logoutBtn = document.getElementById('logout-btn');
+const userDisplayEmail = document.getElementById('user-display-email');
 
-let currentUser = null;
-let currentTasks = [];
+const taskForm = document.getElementById('task-form');
+const taskInput = document.getElementById('task-input');
+const taskList = document.getElementById('task-list');
 
-// 2. Authentication Logic
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessages = document.getElementById('chat-messages');
+
+let unsubscribeTasks = null;
+
+// Authentication State Listener
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        currentUser = user;
-        ui.login.classList.remove('active');
-        ui.dash.classList.add('active');
-        
-        // Update header with Google Profile info if it exists
-        if (user.displayName) ui.displayName.innerText = `${user.displayName}'s Schedule`;
-        if (user.photoURL) {
-            ui.profilePic.src = user.photoURL;
-            ui.profilePic.style.display = 'block';
-        }
-        
-        loadData();
+        authContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+        userDisplayEmail.textContent = user.email;
+        loadUserTasks(user.uid);
     } else {
-        currentUser = null;
-        ui.login.classList.add('active');
-        ui.dash.classList.remove('active');
-        ui.profilePic.style.display = 'none';
-        ui.displayName.innerText = 'My Schedule';
+        authContainer.classList.remove('hidden');
+        appContainer.classList.add('hidden');
+        userDisplayEmail.textContent = '';
+        taskList.innerHTML = '';
+        if (unsubscribeTasks) unsubscribeTasks();
     }
 });
 
-// Email/Password Logins
-document.getElementById('login-btn').addEventListener('click', () => {
-    signInWithEmailAndPassword(auth, ui.email.value, ui.pass.value)
-        .catch(err => document.getElementById('auth-error').innerText = err.message);
-});
-document.getElementById('register-btn').addEventListener('click', () => {
-    createUserWithEmailAndPassword(auth, ui.email.value, ui.pass.value)
-        .catch(err => document.getElementById('auth-error').innerText = err.message);
+// Email / Password Login & Registration Handler
+emailAuthForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    authError.textContent = '';
+    const email = authEmailInput.value;
+    const password = authPasswordInput.value;
+
+    try {
+        // Try signing in first
+        await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+        try {
+            // If user doesn't exist, automatically create account
+            await createUserWithEmailAndPassword(auth, email, password);
+        } catch (createError) {
+            authError.textContent = createError.message;
+        }
+    }
 });
 
-// Google Popup Login
-document.getElementById('google-login-btn').addEventListener('click', () => {
-    signInWithPopup(auth, googleProvider)
-        .catch(err => document.getElementById('auth-error').innerText = err.message);
+// Google Sign-In Handler
+googleAuthBtn.addEventListener('click', async () => {
+    authError.textContent = '';
+    try {
+        await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+        authError.textContent = error.message;
+    }
 });
 
-document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+// Logout Handler
+logoutBtn.addEventListener('click', () => {
+    signOut(auth);
+});
 
-// 3. Database Sync (Tasks & Chats)
-function loadData() {
-    onSnapshot(query(collection(db, `users/${currentUser.uid}/tasks`)), (snapshot) => {
-        ui.tasks.innerHTML = '';
-        currentTasks = [];
+// Firestore: Load and Display Tasks for Current User Only
+function loadUserTasks(uid) {
+    const tasksRef = collection(db, `users/${uid}/tasks`);
+    
+    unsubscribeTasks = onSnapshot(tasksRef, (snapshot) => {
+        taskList.innerHTML = '';
         snapshot.forEach((docSnap) => {
-            const task = { id: docSnap.id, ...docSnap.data() };
-            currentTasks.push(task);
-            
-            const div = document.createElement('div');
-            div.className = 'task-item';
-            div.innerHTML = `<span>${task.title}</span><button class="delete-task" data-id="${task.id}">X</button>`;
-            ui.tasks.appendChild(div);
+            const taskData = docSnap.data();
+            const li = document.createElement('li');
+            li.className = `task-item ${taskData.completed ? 'completed' : ''}`;
+            li.innerHTML = `
+                <span>${escapeHtml(taskData.text)}</span>
+                <div class="task-actions">
+                    <button class="secondary-btn" onclick="window.toggleTask('${docSnap.id}', ${!taskData.completed})">${taskData.completed ? 'Undo' : 'Done'}</button>
+                    <button class="delete-btn" onclick="window.deleteTask('${docSnap.id}')">✕</button>
+                </div>
+            `;
+            taskList.appendChild(li);
         });
-
-        document.querySelectorAll('.delete-task').forEach(btn => {
-            btn.addEventListener('click', (e) => deleteDoc(doc(db, `users/${currentUser.uid}/tasks`, e.target.dataset.id)));
-        });
-    });
-
-    onSnapshot(query(collection(db, `users/${currentUser.uid}/messages`), orderBy('timestamp', 'asc')), (snapshot) => {
-        ui.chats.innerHTML = '';
-        snapshot.forEach((docSnap) => {
-            const msg = docSnap.data();
-            ui.chats.innerHTML += `<div class="message ${msg.role}">${msg.content}</div>`;
-        });
-        ui.chats.scrollTop = ui.chats.scrollHeight;
     });
 }
 
-// 4. AI Communication Loop
-document.getElementById('send-btn').addEventListener('click', async () => {
-    const text = ui.input.value.trim();
-    if (!text) return;
-    ui.input.value = '';
+// Add Task Handler
+taskForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = taskInput.value.trim();
+    if (!text || !auth.currentUser) return;
 
-    await addDoc(collection(db, `users/${currentUser.uid}/messages`), { role: 'user', content: text, timestamp: new Date() });
+    try {
+        await addDoc(collection(db, `users/${auth.currentUser.uid}/tasks`), {
+            text: text,
+            completed: false,
+            createdAt: new Date()
+        });
+        taskInput.value = '';
+    } catch (error) {
+        console.error("Error adding task: ", error);
+    }
+});
 
-    const prompt = `You are a task manager. The user's tasks are: ${JSON.stringify(currentTasks)}. 
-    Respond in strict JSON: {"reply": "Chat response to user", "action": "add|delete|none", "taskTitle": "Task name if adding, else null"}`;
+// Global helpers for task actions
+window.deleteTask = async (taskId) => {
+    if (!auth.currentUser) return;
+    try {
+        await deleteDoc(doc(db, `users/${auth.currentUser.uid}/tasks`, taskId));
+    } catch (error) {
+        console.error("Error deleting task: ", error);
+    }
+};
+
+// OpenRouter AI Chat Integration
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const prompt = chatInput.value.trim();
+    if (!prompt) return;
+
+    appendMessage(prompt, 'user');
+    chatInput.value = '';
+
+    const typingMsg = appendMessage('Thinking...', 'assistant');
 
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
-            headers: { "Authorization": `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
+            headers: {
+                "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+                "Content-Type": "application/json"
+            },
             body: JSON.stringify({
-                model: "google/gemini-flash-1.5",
-                messages: [{ role: "system", content: prompt }, { role: "user", content: text }]
+                "model": "deepseek/deepseek-chat", // or any preferred openrouter model
+                "messages": [
+                    { "role": "system", "content": "You are a helpful task management assistant." },
+                    { "role": "user", "content": prompt }
+                ]
             })
         });
 
         const data = await response.json();
-        const aiJson = JSON.parse(data.choices[0].message.content.replace(/```json|```/g, ''));
-
-        await addDoc(collection(db, `users/${currentUser.uid}/messages`), { role: 'bot', content: aiJson.reply, timestamp: new Date() });
-
-        if (aiJson.action === 'add' && aiJson.taskTitle) {
-            await addDoc(collection(db, `users/${currentUser.uid}/tasks`), { title: aiJson.taskTitle });
-        }
+        const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
+        typingMsg.textContent = reply;
     } catch (error) {
-        console.error("Error:", error);
+        typingMsg.textContent = "Error communicating with AI assistant.";
     }
 });
+
+function appendMessage(text, sender) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+    msgDiv.textContent = text;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return msgDiv;
+}
+
+function escapeHtml(str) {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
