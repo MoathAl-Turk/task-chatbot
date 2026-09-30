@@ -2,21 +2,18 @@
 body { margin: 0; padding: 0; background-color: #f4f7f6; color: #333; }
 
 #login-container {
-    display: none;
-    max-width: 400px; margin: 100px auto; padding: 30px;
-    background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    text-align: center;
+    display: none; max-width: 400px; margin: 100px auto; padding: 30px;
+    background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;
 }
 #login-container.active { display: block; }
 #login-container input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; }
 button { padding: 10px 15px; border: none; border-radius: 4px; background: #007bff; color: white; cursor: pointer; }
-button:hover { background: #0056b3; }
+button:hover { filter: brightness(90%); }
 
-#dashboard-container { display: none; height: 100vh; display: flex; flex-direction: column; }
+#dashboard-container { display: none; height: 100vh; flex-direction: column; }
 #dashboard-container.active { display: flex; }
 
 header { padding: 15px 30px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-
 .split-view { display: flex; flex: 1; overflow: hidden; }
 
 .task-panel { flex: 1; padding: 20px; background: #f9f9f9; overflow-y: auto; border-right: 1px solid #ddd; }
