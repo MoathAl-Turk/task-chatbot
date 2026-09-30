@@ -7,42 +7,47 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Login Section -->
+    <!-- Login Screen -->
     <div id="login-container" class="active">
-        <h2>Welcome to AI Task Manager</h2>
-        <input type="email" id="email" placeholder="Email">
+        <h2>AI Task Manager</h2>
+        <input type="email" id="email" placeholder="Email address">
         <input type="password" id="password" placeholder="Password">
-        <button id="login-btn">Sign In</button>
+        <button id="login-btn">Sign In with Email</button>
         <button id="register-btn">Register</button>
+        
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
+        <button id="google-login-btn" style="background: #db4437; width: 100%;">Sign in with Google</button>
+        
         <p id="auth-error" style="color: red;"></p>
     </div>
 
     <!-- Main Dashboard -->
     <div id="dashboard-container">
         <header>
-            <h2>My Schedule</h2>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <!-- These will automatically update if they use Google Login -->
+                <img id="user-profile-pic" src="" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; display: none;">
+                <h2 id="user-display-name">My Schedule</h2>
+            </div>
             <button id="logout-btn">Sign Out</button>
         </header>
         
         <div class="split-view">
-            <!-- Task Board -->
             <div class="task-panel">
                 <h3>Current Tasks</h3>
                 <div id="task-list"></div>
             </div>
 
-            <!-- Chat Interface -->
             <div class="chat-panel">
                 <div id="chat-history"></div>
                 <div class="chat-input-area">
-                    <input type="text" id="chat-input" placeholder="Ask the AI to add or organize tasks...">
+                    <input type="text" id="chat-input" placeholder="Tell the AI to add or manage tasks...">
                     <button id="send-btn">Send</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Load JavaScript as a module for Firebase v9 -->
     <script type="module" src="script.js"></script>
 </body>
 </html>
