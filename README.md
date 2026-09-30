@@ -3,9 +3,7 @@
 Im making a task chatbot that has a databse so that when a user launches this webdite it can interact with him and arrange his tasks and save it in a database
 
   1.The database schema :its constructed of three main Tables
-  \n
   A:Users
-  \n
   B:Conversations
   C:Messages
   
