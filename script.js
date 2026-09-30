@@ -1,32 +1,39 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
-// 1. Firebase Configuration (Replace with your Firebase Project settings)
+// 1. Firebase & API Config
 const firebaseConfig = {
     apiKey: "YOUR_FIREBASE_API_KEY",
     authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    projectId: "YOUR_PROJECT_ID"
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// AI API Configuration (e.g., OpenRouter or Gemini)
-const AI_API_KEY = "YOUR_AI_API_KEY"; 
+const googleProvider = new GoogleAuthProvider();
+const OPENROUTER_API_KEY = "YOUR_OPENROUTER_API_KEY";
 
 // DOM Elements
-const loginContainer = document.getElementById('login-container');
-const dashboardContainer = document.getElementById('dashboard-container');
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const taskList = document.getElementById('task-list');
-const chatHistory = document.getElementById('chat-history');
-const chatInput = document.getElementById('chat-input');
+const ui = {
+    login: document.getElementById('login-container'),
+    dash: document.getElementById('dashboard-container'),
+    email: document.getElementById('email'),
+    pass: document.getElementById('password'),
+    tasks: document.getElementById('task-list'),
+    chats: document.getElementById('chat-history'),
+    input: document.getElementById('chat-input'),
+    profilePic: document.getElementById('user-profile-pic'),
+    displayName: document.getElementById('user-display-name')
+};
 
 let currentUser = null;
 let currentTasks = [];
@@ -35,113 +42,104 @@ let currentTasks = [];
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
-        loginContainer.classList.remove('active');
-        dashboardContainer.classList.add('active');
-        loadTasks();
-        loadChats();
+        ui.login.classList.remove('active');
+        ui.dash.classList.add('active');
+        
+        // Update header with Google Profile info if it exists
+        if (user.displayName) ui.displayName.innerText = `${user.displayName}'s Schedule`;
+        if (user.photoURL) {
+            ui.profilePic.src = user.photoURL;
+            ui.profilePic.style.display = 'block';
+        }
+        
+        loadData();
     } else {
         currentUser = null;
-        loginContainer.classList.add('active');
-        dashboardContainer.classList.remove('active');
+        ui.login.classList.add('active');
+        ui.dash.classList.remove('active');
+        ui.profilePic.style.display = 'none';
+        ui.displayName.innerText = 'My Schedule';
     }
 });
 
+// Email/Password Logins
 document.getElementById('login-btn').addEventListener('click', () => {
-    signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value)
+    signInWithEmailAndPassword(auth, ui.email.value, ui.pass.value)
+        .catch(err => document.getElementById('auth-error').innerText = err.message);
+});
+document.getElementById('register-btn').addEventListener('click', () => {
+    createUserWithEmailAndPassword(auth, ui.email.value, ui.pass.value)
+        .catch(err => document.getElementById('auth-error').innerText = err.message);
+});
+
+// Google Popup Login
+document.getElementById('google-login-btn').addEventListener('click', () => {
+    signInWithPopup(auth, googleProvider)
         .catch(err => document.getElementById('auth-error').innerText = err.message);
 });
 
 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 
 // 3. Database Sync (Tasks & Chats)
-function loadTasks() {
-    const q = query(collection(db, `users/${currentUser.uid}/tasks`));
-    onSnapshot(q, (snapshot) => {
-        taskList.innerHTML = '';
+function loadData() {
+    onSnapshot(query(collection(db, `users/${currentUser.uid}/tasks`)), (snapshot) => {
+        ui.tasks.innerHTML = '';
         currentTasks = [];
         snapshot.forEach((docSnap) => {
-            const task = docSnap.data();
-            task.id = docSnap.id;
+            const task = { id: docSnap.id, ...docSnap.data() };
             currentTasks.push(task);
             
             const div = document.createElement('div');
             div.className = 'task-item';
-            div.innerHTML = `
-                <span>${task.title}</span>
-                <button class="delete-task" data-id="${task.id}">X</button>
-            `;
-            taskList.appendChild(div);
+            div.innerHTML = `<span>${task.title}</span><button class="delete-task" data-id="${task.id}">X</button>`;
+            ui.tasks.appendChild(div);
         });
 
-        // Add delete listeners
         document.querySelectorAll('.delete-task').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/tasks`, e.target.dataset.id));
-            });
+            btn.addEventListener('click', (e) => deleteDoc(doc(db, `users/${currentUser.uid}/tasks`, e.target.dataset.id)));
         });
     });
-}
 
-function loadChats() {
-    const q = query(collection(db, `users/${currentUser.uid}/messages`), orderBy('timestamp', 'asc'));
-    onSnapshot(q, (snapshot) => {
-        chatHistory.innerHTML = '';
+    onSnapshot(query(collection(db, `users/${currentUser.uid}/messages`), orderBy('timestamp', 'asc')), (snapshot) => {
+        ui.chats.innerHTML = '';
         snapshot.forEach((docSnap) => {
             const msg = docSnap.data();
-            const div = document.createElement('div');
-            div.className = `message ${msg.role}`;
-            div.innerText = msg.content;
-            chatHistory.appendChild(div);
+            ui.chats.innerHTML += `<div class="message ${msg.role}">${msg.content}</div>`;
         });
-        chatHistory.scrollTop = chatHistory.scrollHeight;
+        ui.chats.scrollTop = ui.chats.scrollHeight;
     });
 }
 
-// 4. Chatbot & AI Logic
+// 4. AI Communication Loop
 document.getElementById('send-btn').addEventListener('click', async () => {
-    const text = chatInput.value.trim();
+    const text = ui.input.value.trim();
     if (!text) return;
-    chatInput.value = '';
+    ui.input.value = '';
 
-    // Save user message to Firebase
-    await addDoc(collection(db, `users/${currentUser.uid}/messages`), {
-        role: 'user', content: text, timestamp: new Date()
-    });
+    await addDoc(collection(db, `users/${currentUser.uid}/messages`), { role: 'user', content: text, timestamp: new Date() });
 
-    // Call AI API
-    const systemPrompt = `You are a task manager assistant. The user's current tasks are: ${JSON.stringify(currentTasks)}. 
-    Respond in strict JSON format: { "reply": "Your message to the user", "action": "add" | "delete" | "none", "taskTitle": "Task name if adding/deleting, else null" }`;
+    const prompt = `You are a task manager. The user's tasks are: ${JSON.stringify(currentTasks)}. 
+    Respond in strict JSON: {"reply": "Chat response to user", "action": "add|delete|none", "taskTitle": "Task name if adding, else null"}`;
 
     try {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
-            headers: {
-                "Authorization": `Bearer ${AI_API_KEY}`,
-                "Content-Type": "application/json"
-            },
+            headers: { "Authorization": `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
                 model: "google/gemini-flash-1.5",
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: text }
-                ]
+                messages: [{ role: "system", content: prompt }, { role: "user", content: text }]
             })
         });
 
         const data = await response.json();
-        // Parse the AI's JSON output
         const aiJson = JSON.parse(data.choices[0].message.content.replace(/```json|```/g, ''));
 
-        // Save AI reply to Firebase
-        await addDoc(collection(db, `users/${currentUser.uid}/messages`), {
-            role: 'bot', content: aiJson.reply, timestamp: new Date()
-        });
+        await addDoc(collection(db, `users/${currentUser.uid}/messages`), { role: 'bot', content: aiJson.reply, timestamp: new Date() });
 
-        // Execute AI actions on the database
         if (aiJson.action === 'add' && aiJson.taskTitle) {
             await addDoc(collection(db, `users/${currentUser.uid}/tasks`), { title: aiJson.taskTitle });
         }
     } catch (error) {
-        console.error("AI Error:", error);
+        console.error("Error:", error);
     }
 });
