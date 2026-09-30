@@ -13,10 +13,9 @@ import {
     getFirestore, 
     collection, 
     addDoc, 
-    getDocs, 
     deleteDoc, 
     doc, 
-    query, 
+    updateDoc, 
     onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -81,11 +80,9 @@ emailAuthForm.addEventListener('submit', async (e) => {
     const password = authPasswordInput.value;
 
     try {
-        // Try signing in first
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         try {
-            // If user doesn't exist, automatically create account
             await createUserWithEmailAndPassword(auth, email, password);
         } catch (createError) {
             authError.textContent = createError.message;
@@ -149,6 +146,17 @@ taskForm.addEventListener('submit', async (e) => {
 });
 
 // Global helpers for task actions
+window.toggleTask = async (taskId, newStatus) => {
+    if (!auth.currentUser) return;
+    try {
+        await updateDoc(doc(db, `users/${auth.currentUser.uid}/tasks`, taskId), {
+            completed: newStatus
+        });
+    } catch (error) {
+        console.error("Error updating task: ", error);
+    }
+};
+
 window.deleteTask = async (taskId) => {
     if (!auth.currentUser) return;
     try {
@@ -177,7 +185,7 @@ chatForm.addEventListener('submit', async (e) => {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                "model": "deepseek/deepseek-chat", // or any preferred openrouter model
+                "model": "deepseek/deepseek-chat",
                 "messages": [
                     { "role": "system", "content": "You are a helpful task management assistant." },
                     { "role": "user", "content": prompt }
