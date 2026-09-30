@@ -12,9 +12,9 @@ import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc
 
 // 1. Firebase & API Config
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID"
+    apiKey: "AIzaSyB4ApK_zUskd6WT9jEvrxHho5VVsEZlRTI",
+    authDomain: "task-chatbot-14df6.firebaseapp.com",
+    projectId: "task-chatbot-14df6"
 };
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
