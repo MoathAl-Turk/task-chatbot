@@ -1,17 +1,12 @@
 # task-chatbot
 
-Im making a task chatbot that has a databse so that when a user launches this webdite it can interact with him and arrange his tasks and save it in a database
+im making a task-manager-chatbot using a new approach i learned called the firebase authentication ; its a managed backend service by Google that handles user identity, secure login flows, and session management entirely outside of your application's code. Instead of you writing the security logic to protect passwords and manage tokens, Google provides a pre-built system that connects directly to your frontend JavaScript.
 
-  1.The database schema :its constructed of three main Tables
-  A:Users
-  B:Conversations
-  C:Messages
-  
-2. User Authentication: When a user logs in we need him to stay logged in across diffrent page reloads by verifying their credintials in the backend; when user enters their email and password the backend checks the users
-table , if it matches it send a JSON web-token and sends it to the fron end, so the front end stores this token so that for every reload or loading chats (request) the frontend attaches this token so the backend knows
-exactly whos making the request
+## Core Features
 
-
-3. Loading Old Chats: Here im making my backend act as the middle-man; between my frontend(user) and the API(Im using an OPENROUTER API) 
+*   **Serverless Architecture:** Hosted purely as static files (HTML/CSS/JS) without the need to deploy or maintain a Node.js server.
+*   **Google Sign-In integration:** Allows users to create an account with email and password or use Firebase's native OAuth to log in securely with their Google account in one click.
+*   **Real-time Firestore Database:** A NoSQL database that automatically syncs the user's task board across devices the moment the AI edits them.
+*   **AI Context Awareness:** The chatbot reads your current schedule invisibly and responds with structured JSON commands to programmatically add and delete tasks on your visual board based on conversational commands.
 
         
