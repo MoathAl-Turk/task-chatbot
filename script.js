@@ -22,9 +22,9 @@ import {
 
 // TODO: Replace with your actual Firebase project configuration values
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "task-chatbot.firebaseapp.com",
-    projectId: "task-chatbot",
+    apiKey: "AIzaSyB4ApK_zUskd6WT9jEvrxHho5VVsEZlRTI",
+    authDomain: "task-chatbot-14df6.firebaseapp.com",
+    projectId: "task-chatbot-14df6",
     storageBucket: "task-chatbot.appspot.com",
     messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
     appId: "YOUR_APP_ID"
