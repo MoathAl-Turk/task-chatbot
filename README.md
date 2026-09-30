@@ -11,4 +11,7 @@ Im making a task chatbot that has a databse so that when a user launches this we
 table , if it matches it send a JSON web-token and sends it to the fron end, so the front end stores this token so that for every reload or loading chats (request) the frontend attaches this token so the backend knows
 exactly whos making the request
 
+
+3. Loading Old Chats: Here im making my backend act as the middle-man; between my frontend(user) and the API(Im using an OPENROUTER API) 
+
         
