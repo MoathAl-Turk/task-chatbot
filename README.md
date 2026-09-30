@@ -1,6 +1,6 @@
 # task-chatbot
 
-im making a task-manager-chatbot using a new approach i learned called the firebase authentication ; its a managed backend service by Google that handles user identity, secure login flows, and session management entirely outside of your application's code. Instead of you writing the security logic to protect passwords and manage tokens, Google provides a pre-built system that connects directly to your frontend JavaScript.
+Im making a task-manager-chatbot using a new approach i learned called the firebase authentication ; its a managed backend service by Google that handles user identity, secure login flows, and session management entirely outside of your application's code. Instead of you writing the security logic to protect passwords and manage tokens, Google provides a pre-built system that connects directly to your frontend JavaScript.
 
 ## Core Features
 
