@@ -210,6 +210,23 @@ body {
     flex: 1;
 }
 
+/* Secure API Key Bar */
+.api-key-container {
+    margin-bottom: 0.75rem;
+    display: flex;
+    gap: 0.5rem;
+}
+
+#openrouter-key-input {
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+#save-key-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+}
+
 #task-list {
     list-style: none;
     overflow-y: auto;
