@@ -21,9 +21,9 @@ import {
 
 // TODO: Replace with your actual Firebase project configuration values
 const firebaseConfig = {
-    apiKey: "AIzaSyB4ApK_zUskd6WT9jEvrxHho5VVsEZlRTI",
-    authDomain: "task-chatbot-14df6.firebaseapp.com",
-    projectId: "task-chatbot-14df6",
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "task-chatbot.firebaseapp.com",
+    projectId: "task-chatbot",
     storageBucket: "task-chatbot.appspot.com",
     messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
     appId: "YOUR_APP_ID"
@@ -166,11 +166,41 @@ window.deleteTask = async (taskId) => {
     }
 };
 
-// OpenRouter AI Chat Integration
+// Secure OpenRouter API Key Handling & Chat Integration
+document.addEventListener('DOMContentLoaded', () => {
+    const apiKeyInput = document.getElementById('openrouter-key-input');
+    const saveKeyBtn = document.getElementById('save-key-btn');
+
+    const storedKey = localStorage.getItem('openrouter_api_key');
+    if (storedKey && apiKeyInput) {
+        apiKeyInput.value = storedKey;
+    }
+
+    saveKeyBtn?.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('openrouter_api_key', key);
+            alert('OpenRouter API key saved securely in your browser!');
+        } else {
+            localStorage.removeItem('openrouter_api_key');
+            alert('API key removed.');
+        }
+    });
+});
+
 chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const prompt = chatInput.value.trim();
     if (!prompt) return;
+
+    const apiKeyInput = document.getElementById('openrouter-key-input');
+    const savedApiKey = localStorage.getItem('openrouter_api_key');
+    const apiKey = savedApiKey || apiKeyInput?.value.trim();
+
+    if (!apiKey) {
+        appendMessage("Please enter and save your OpenRouter API key above before chatting.", 'assistant');
+        return;
+    }
 
     appendMessage(prompt, 'user');
     chatInput.value = '';
@@ -181,7 +211,7 @@ chatForm.addEventListener('submit', async (e) => {
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": "Bearer YOUR_OPENROUTER_API_KEY",
+                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -194,6 +224,12 @@ chatForm.addEventListener('submit', async (e) => {
         });
 
         const data = await response.json();
+        
+        if (response.status === 401) {
+            typingMsg.textContent = "Error: Invalid OpenRouter API key. Please check your key.";
+            return;
+        }
+
         const reply = data.choices?.[0]?.message?.content || "Sorry, I couldn't process that.";
         typingMsg.textContent = reply;
     } catch (error) {
