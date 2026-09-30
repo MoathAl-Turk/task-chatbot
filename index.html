@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Task Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Section -->
+    <div id="login-container" class="active">
+        <h2>Welcome to AI Task Manager</h2>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+        <button id="login-btn">Sign In</button>
+        <button id="register-btn">Register</button>
+        <p id="auth-error" style="color: red;"></p>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard-container">
+        <header>
+            <h2>My Schedule</h2>
+            <button id="logout-btn">Sign Out</button>
+        </header>
+        
+        <div class="split-view">
+            <!-- Task Board -->
+            <div class="task-panel">
+                <h3>Current Tasks</h3>
+                <div id="task-list"></div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="chat-panel">
+                <div id="chat-history"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Ask the AI to add or organize tasks...">
+                    <button id="send-btn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript as a module for Firebase v9 -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
