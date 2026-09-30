@@ -21,12 +21,7 @@ import {
 
 // TODO: Replace with your actual Firebase project configuration values
 const firebaseConfig = {
-  apiKey: "AIzaSyB4ApK_zUskd6WT9jEvrxHho5VVsEZlRTI",
-  authDomain: "task-chatbot-14df6.firebaseapp.com",
-  projectId: "task-chatbot-14df6",
-  storageBucket: "task-chatbot-14df6.firebasestorage.app",
-  messagingSenderId: "8211727061",
-  appId: "1:8211727061:web:20abb7e261fbd1885f985c"
+ 
 };
 
 // Initialize Firebase
